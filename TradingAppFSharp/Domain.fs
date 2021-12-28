@@ -2,30 +2,80 @@
 
 open System
 
-type State = int
-
-type Message =
-    | Buy of int
-    | Sell of int
-
 type Isin = { value: string }
-
 type Amount = { value: string }
-
 type Currency = { value: decimal }
-
 type Percentage = { value: decimal }
 
-type Transaction = { amount: Amount; price: Currency; timestamp: DateTime; isin: Isin}
+type Buy = {
+    amount: Amount;
+    îsin: Isin
+}
+
+type Sell = {
+    amount: Amount;
+    îsin: Isin
+}
+
+type Message =
+    | Buy of Buy
+    | Sell of Sell
+
+type Transaction = { 
+    amount: Amount; 
+    price: Currency; 
+    timestamp: DateTime; 
+    isin: Isin
+}
 
 type Stock = { isin: Isin; name: string }
 
-type Depot = { constituents: List<Transaction> }
+type Depot = { 
+    transactions: List<Transaction> 
+}
 
-let init () : State =
-    0
+type Position = {
+    currentValue: Currency;
+    stock: Stock;
+    differenceYesterdayInPercent: Percentage;
+    differenceYesterdayInCurrency: Currency;
+    differenceTotalInPercentage: Percentage;
+    differenceTotalInCurrency: Currency;
+    currentAmount: Amount
+}
 
-let update (msg : Message) (model : State) : State =
+type DepotApi = {
+    buyOrder: Depot -> Buy -> Depot
+    sellOrder: Depot -> Sell -> Depot
+    calcDepotValue: Depot -> Currency
+    getPositions: Depot -> List<Position>
+}
+
+let init () : Depot = { transactions = List.empty }
+
+module Implementation =
+    let private buyOrder (depot: Depot) (buy: Buy) =
+        let newTransaction = { amount = buy.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = buy.îsin }
+        { transactions = newTransaction :: depot.transactions }
+
+    let private sellOrder (depot: Depot) (sell: Sell) =
+        let newTransaction = { amount = sell.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = sell.îsin }
+        { transactions = newTransaction :: depot.transactions }
+
+    let private calcDepotValue (depot: Depot) : Currency =
+        { value = depot.transactions |> List.map (fun t -> t.price.value) |> List.sum }
+
+    let private getPositions (depot: Depot) =
+        List.empty
+
+    let depotApi: DepotApi = {
+        buyOrder = buyOrder
+        sellOrder = sellOrder
+        calcDepotValue = calcDepotValue
+        getPositions = getPositions
+    }
+
+let update (msg : Message) (depot : Depot) : Depot =
     match msg with
-    | Buy x -> model + x
-    | Sell x -> model - x
+    | Buy x -> Implementation.depotApi.buyOrder depot x
+    | Sell x -> depot
