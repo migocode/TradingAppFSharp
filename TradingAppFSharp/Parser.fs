@@ -1,6 +1,7 @@
 ﻿module Parser
 
 open System
+open Domain
 
 let safeEquals (it : string) (theOther : string) =
     String.Equals(it, theOther, StringComparison.OrdinalIgnoreCase)
@@ -16,12 +17,8 @@ let (|Buy|Sell|Help|ParseFailed|) (input : string) =
     let parts = input.Split(' ') |> List.ofArray
     match parts with
     | [ verb; isin; amount ] when safeEquals verb (nameof Domain.Buy) -> 
-            tryParseInt amount (fun value -> Buy value)
+            tryParseInt amount (fun value -> Buy { buyAmount = { value = amount }; timestamp = DateTime.Now; isin = { value = isin } })
     | [ verb; isin; amount ] when safeEquals verb (nameof Domain.Sell) ->
-            tryParseInt amount (fun value -> Sell value)
+            tryParseInt amount (fun value -> Sell { sellAmount = { value = amount }; timestamp = DateTime.Now; isin = { value = isin } })
     | [ verb ] when safeEquals verb HelpLabel -> Help
-    //| [ verb; arg ] when safeEquals verb (nameof Domain.IncrementBy) ->
-    //    tryParseInt arg (fun value -> IncrementBy value)
-    //| [ verb; arg ] when safeEquals verb (nameof Domain.DecrementBy) ->
-    //    tryParseInt arg (fun value -> DecrementBy value)
     | _ -> ParseFailed

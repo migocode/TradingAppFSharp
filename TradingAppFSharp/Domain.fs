@@ -9,13 +9,13 @@ type Percentage = { value: decimal }
 
 
 type Buy = {
-    amount: Amount; 
+    buyAmount: Amount; 
     timestamp: DateTime; 
     isin: Isin
 }
 
 type Sell = {
-    amount: Amount; 
+    sellAmount: Amount; 
     timestamp: DateTime; 
     isin: Isin
 }
@@ -55,11 +55,11 @@ let init () : Depot = { transactions = List.empty }
 
 module Implementation =
     let private buyOrder (depot: Depot) (buy: Buy) =
-        let newTransaction = { amount = buy.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = buy.isin }
+        let newTransaction = { buyAmount = buy.buyAmount; timestamp = DateTime.Now; isin = buy.isin }
         { transactions = newTransaction :: depot.transactions }
 
     let private sellOrder (depot: Depot) (sell: Sell) =
-        let newTransaction = { amount = sell.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = sell.isin }
+        let newTransaction = { buyAmount = sell.sellAmount; timestamp = DateTime.Now; isin = sell.isin }
         { transactions = newTransaction :: depot.transactions }
 
     let private calcDepotValue (depot: Depot) : Currency =

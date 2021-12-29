@@ -8,19 +8,10 @@ type Message =
     | HelpRequested
     | NotParsable of string
 
-//let read (input : string) =
-//    match input with
-//    | Increment -> Domain.Increment |> DomainMessage
-//    | Decrement -> Domain.Decrement |> DomainMessage
-//    | IncrementBy v -> Domain.IncrementBy v |> DomainMessage
-//    | DecrementBy v -> Domain.DecrementBy v |> DomainMessage
-//    | Help -> HelpRequested
-//    | ParseFailed  -> NotParsable input
-
 let read (input : string) =
     match input with
-    | Buy -> Domain.Buy |> DomainMessage
-    | Sell -> Domain.Sell |> DomainMessage
+    | Buy v -> Domain.Buy v |> DomainMessage
+    | Sell v -> Domain.Sell v |> DomainMessage
     | Help -> HelpRequested
     | ParseFailed -> NotParsable input
 
@@ -32,7 +23,7 @@ let createHelpText () : string =
     |> Array.fold (fun prev curr -> prev + " " + curr) ""
     |> (fun s -> s.Trim() |> sprintf "Known commands are: %s")
 
-let evaluate (update : Domain.Message -> Depot -> Depot) (depot : Depot) (msg : Message) =
+let evaluate (update : Domain.Message -> Domain.Depot -> Domain.Depot) (depot : Domain.Depot) (msg : Message) =
     match msg with
     | DomainMessage msg ->
         let newState = update msg depot
@@ -46,13 +37,13 @@ let evaluate (update : Domain.Message -> Depot -> Depot) (depot : Depot) (msg : 
             sprintf """"%s" was not parsable. %s"""  originalInput "You can get information about known commands by typing \"Help\""
         (depot, message)
 
-let print (state : Depot, outputToPrint : string) =
+let print (state : Domain.Depot, outputToPrint : string) =
     printfn "%s\n" outputToPrint
     printf "> "
 
     state
 
-let rec loop (depot : Depot) =
+let rec loop (depot : Domain.Depot) =
     Console.ReadLine()
     |> read
     |> evaluate Domain.update depot
