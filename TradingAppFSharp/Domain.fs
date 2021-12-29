@@ -7,26 +7,26 @@ type Amount = { value: string }
 type Currency = { value: decimal }
 type Percentage = { value: decimal }
 
+
 type Buy = {
-    amount: Amount;
-    îsin: Isin
+    amount: Amount; 
+    timestamp: DateTime; 
+    isin: Isin
 }
 
 type Sell = {
-    amount: Amount;
-    îsin: Isin
+    amount: Amount; 
+    timestamp: DateTime; 
+    isin: Isin
 }
 
 type Message =
     | Buy of Buy
     | Sell of Sell
 
-type Transaction = { 
-    amount: Amount; 
-    price: Currency; 
-    timestamp: DateTime; 
-    isin: Isin
-}
+type Transaction = 
+    | Buy of Buy
+    | Sell of Sell
 
 type Stock = { isin: Isin; name: string }
 
@@ -55,11 +55,11 @@ let init () : Depot = { transactions = List.empty }
 
 module Implementation =
     let private buyOrder (depot: Depot) (buy: Buy) =
-        let newTransaction = { amount = buy.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = buy.îsin }
+        let newTransaction = { amount = buy.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = buy.isin }
         { transactions = newTransaction :: depot.transactions }
 
     let private sellOrder (depot: Depot) (sell: Sell) =
-        let newTransaction = { amount = sell.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = sell.îsin }
+        let newTransaction = { amount = sell.amount; price = { value = 0M }; timestamp = DateTime.Now; isin = sell.isin }
         { transactions = newTransaction :: depot.transactions }
 
     let private calcDepotValue (depot: Depot) : Currency =

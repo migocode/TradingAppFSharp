@@ -2,7 +2,6 @@
 
 open System
 open Parser
-open Domain
 
 type Message =
     | DomainMessage of Domain.Message
@@ -18,7 +17,12 @@ type Message =
 //    | Help -> HelpRequested
 //    | ParseFailed  -> NotParsable input
 
-let read (input : string) = Buy
+let read (input : string) =
+    match input with
+    | Buy -> Domain.Buy |> DomainMessage
+    | Sell -> Domain.Sell |> DomainMessage
+    | Help -> HelpRequested
+    | ParseFailed -> NotParsable input
 
 open Microsoft.FSharp.Reflection
 
