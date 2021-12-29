@@ -17,8 +17,8 @@ let (|Buy|Sell|Help|ParseFailed|) (input : string) =
     let parts = input.Split(' ') |> List.ofArray
     match parts with
     | [ verb; isin; amount ] when safeEquals verb (nameof Domain.Buy) -> 
-            tryParseInt amount (fun value -> Buy { buyAmount = { value = amount }; timestamp = DateTime.Now; isin = { value = isin } })
+            tryParseInt amount (fun value -> Buy { buyAmount = { value = value }; timestamp = DateTime.Now; isin = { value = isin } })
     | [ verb; isin; amount ] when safeEquals verb (nameof Domain.Sell) ->
-            tryParseInt amount (fun value -> Sell { sellAmount = { value = amount }; timestamp = DateTime.Now; isin = { value = isin } })
+            tryParseInt amount (fun value -> Sell { sellAmount = { value = value }; timestamp = DateTime.Now; isin = { value = isin } })
     | [ verb ] when safeEquals verb HelpLabel -> Help
     | _ -> ParseFailed

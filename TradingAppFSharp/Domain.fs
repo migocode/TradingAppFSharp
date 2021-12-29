@@ -3,10 +3,9 @@
 open System
 
 type Isin = { value: string }
-type Amount = { value: string }
+type Amount = { value: int }
 type Currency = { value: decimal }
 type Percentage = { value: decimal }
-
 
 type Buy = {
     buyAmount: Amount; 
@@ -23,6 +22,8 @@ type Sell = {
 type Message =
     | Buy of Buy
     | Sell of Sell
+    | DepotValue
+    | DepotPositions
 
 type Transaction = 
     | Buy of Buy
@@ -53,17 +54,28 @@ type DepotApi = {
 
 let init () : Depot = { transactions = List.empty }
 
+let getCurrentPrice (isin: string) : decimal =
+    let rnd = System.Random()
+    rnd.Next(0, 100)
+
 module Implementation =
     let private buyOrder (depot: Depot) (buy: Buy) =
         let newTransaction = { buyAmount = buy.buyAmount; timestamp = DateTime.Now; isin = buy.isin }
-        { transactions = newTransaction :: depot.transactions }
+        { transactions = (Buy newTransaction) :: depot.transactions }
 
     let private sellOrder (depot: Depot) (sell: Sell) =
-        let newTransaction = { buyAmount = sell.sellAmount; timestamp = DateTime.Now; isin = sell.isin }
-        { transactions = newTransaction :: depot.transactions }
+        let newTransaction = { sellAmount = sell.sellAmount; timestamp = DateTime.Now; isin = sell.isin }
+        { transactions = (Sell newTransaction) :: depot.transactions }
 
     let private calcDepotValue (depot: Depot) : Currency =
-        { value = depot.transactions |> List.map (fun t -> t.price.value) |> List.sum }
+        {
+            value =
+                depot.transactions
+                |> List.map (fun t -> match t with
+                    | Sell s -> (decimal) s.sellAmount.value * getCurrentPrice s.isin.value
+                    | Buy b -> (decimal) b.buyAmount.value  * getCurrentPrice b.isin.value)
+                |> List.sum
+        }
 
     let private getPositions (depot: Depot) =
         List.empty
@@ -77,5 +89,7 @@ module Implementation =
 
 let update (msg : Message) (depot : Depot) : Depot =
     match msg with
-    | Buy x -> Implementation.depotApi.buyOrder depot x
-    | Sell x -> depot
+    | Message.Buy x -> Implementation.depotApi.buyOrder depot x
+    | Message.Sell x -> depot
+    | Message.DepotValue -> depot //TODO: and print value
+    | Message.DepotPositions -> depot //TODO: and print depot positions
