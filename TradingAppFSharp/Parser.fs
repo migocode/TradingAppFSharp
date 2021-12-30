@@ -30,7 +30,7 @@ let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|) (input: string) =
     | [ verb; isin; amount ] when safeEquals verb (nameof Domain.Sell) ->
         tryParseInt amount (fun value ->
             Sell
-                { sellAmount = { value = value }
+                { sellAmount = { value = -value }
                   timestamp = DateTime.Now
                   isin = { value = isin } })
     | [ verb ] when safeEquals verb (nameof Domain.DepotValue) -> DepotValue
