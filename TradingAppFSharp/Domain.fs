@@ -59,10 +59,38 @@ module Implementation =
         printfn "Depot_Value : %A" depotValue
         depot
 
+    let columnInnerSize = 15
+    let numberOfPositionColumns = 6
+
+    let private getTableRow(columnValues: string list) =
+        let row = columnValues
+                    |> List.map(fun s -> $"| {s.PadRight columnInnerSize} ")
+                    |> List.reduce(fun a b -> a + b)
+        $"{row} |"
+
+    let private getPositionHeader =
+        getTableRow
+            ["ISIN"; 
+             "CurrentPrice";
+             "Amount";
+             "Current Value";
+             "Performance";
+             "Performance [%]"]
+
+    let private getColumnsForPositionRow(p: SimplePositionWithValue) =
+        [p.stock.isin.value;
+         string (getCurrentPrice p.stock.isin.value);
+         string p.currentAmount.value;
+         string p.currentValueSum.value;
+         "todo: calc";
+         "todo: calc"]
+
     let private printPositions (depot: Depot) =
+        printfn $"{getPositionHeader}"
+        printfn "%s" (String.replicate ((columnInnerSize + 3) * numberOfPositionColumns + 1) "-")
         getPositions depot
-        |> List.map(dump)
-        |> List.iter (printfn "%s")
+        |> List.map(fun p -> getColumnsForPositionRow p |> getTableRow)
+        |> List.iter (fun p -> printfn $"{p}")
         depot
 
     let private buyOrder (depot: Depot) (buy: Buy) =
