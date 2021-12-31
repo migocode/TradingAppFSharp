@@ -4,28 +4,28 @@ open System
 open Parser
 
 type Message =
-    | DomainMessage of Types.Message
+    | DomainMessage of MessageTypes.Message
     | HelpRequested
     | NotParsable of string
 
 let read (input: string) =
     match input with
-    | Buy v -> Types.Buy v |> DomainMessage
-    | Sell v -> Types.Sell v |> DomainMessage
-    | DepotPositions -> Types.DepotPositions |> DomainMessage
-    | DepotValue -> Types.DepotValue |> DomainMessage
+    | Buy v -> MessageTypes.Buy v |> DomainMessage
+    | Sell v -> MessageTypes.Sell v |> DomainMessage
+    | DepotPositions -> MessageTypes.DepotPositions |> DomainMessage
+    | DepotValue -> MessageTypes.DepotValue |> DomainMessage
     | Help -> HelpRequested
     | ParseFailed -> NotParsable input
 
 open Microsoft.FSharp.Reflection
 
 let createHelpText () : string =
-    FSharpType.GetUnionCases typeof<Types.Message>
+    FSharpType.GetUnionCases typeof<MessageTypes.Message>
     |> Array.map (fun case -> case.Name)
     |> Array.fold (fun prev curr -> prev + " " + curr) ""
     |> (fun s -> s.Trim() |> sprintf "Known commands are: %s")
 
-let evaluate (update: Types.Message -> Types.Depot -> Types.Depot) (depot: Types.Depot) (msg: Message) =
+let evaluate (update: MessageTypes.Message -> DomainTypes.Depot -> DomainTypes.Depot) (depot: DomainTypes.Depot) (msg: Message) =
     match msg with
     | DomainMessage msg ->
         let newState = update msg depot
@@ -46,15 +46,14 @@ let evaluate (update: Types.Message -> Types.Depot -> Types.Depot) (depot: Types
 
         (depot, message)
 
-let print (state: Types.Depot, outputToPrint: string) =
+let print (state: DomainTypes.Depot, outputToPrint: string) =
     printfn "%s\n" outputToPrint
     printf "> "
-
     state
 
-let rec loop (depot: Types.Depot) =
+let rec loop (depot: DomainTypes.Depot) =
     Console.ReadLine()
     |> read
-    |> evaluate Domain.update depot
+    |> evaluate State.update depot
     |> print
     |> loop

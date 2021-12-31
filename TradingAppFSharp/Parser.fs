@@ -1,7 +1,7 @@
 ﻿module Parser
 
 open System
-open Types
+open MessageTypes
 
 let safeEquals (it: string) (theOther: string) =
     String.Equals(it, theOther, StringComparison.OrdinalIgnoreCase)
@@ -21,19 +21,19 @@ let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|) (input: string) =
     let parts = input.Split(' ') |> List.ofArray
 
     match parts with
-    | [ verb; isin; amount ] when safeEquals verb (nameof Types.Buy) ->
+    | [ verb; isin; amount ] when safeEquals verb (nameof Buy) ->
         tryParseInt amount (fun value ->
             Buy
                 { buyAmount = { value = value }
-                  timestamp = DateTime.Now
+                  messageTimestamp = DateTime.Now
                   isin = { value = isin } })
-    | [ verb; isin; amount ] when safeEquals verb (nameof Types.Sell) ->
+    | [ verb; isin; amount ] when safeEquals verb (nameof Sell) ->
         tryParseInt amount (fun value ->
             Sell
-                { sellAmount = { value = -value }
-                  timestamp = DateTime.Now
+                { sellAmount = { value = value }
+                  messageTimestamp = DateTime.Now
                   isin = { value = isin } })
-    | [ verb ] when safeEquals verb (nameof Types.DepotValue) -> DepotValue
-    | [ verb ] when safeEquals verb (nameof Types.DepotPositions) -> DepotPositions
+    | [ verb ] when safeEquals verb (nameof DepotValue) -> DepotValue
+    | [ verb ] when safeEquals verb (nameof DepotPositions) -> DepotPositions
     | [ verb ] when safeEquals verb HelpLabel -> Help
     | _ -> ParseFailed
