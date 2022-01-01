@@ -9,11 +9,6 @@ type Percentage = { value: decimal }
 
 type Stock = { isin: Isin; name: string }
 
-type AgnosticTransaction =
-    { stock: Stock
-      amount: Amount
-      price: Currency }
-
 type SimplePosition =
     { currentAmount: Amount
       stock: Stock }
@@ -27,20 +22,14 @@ type Position =
       differenceTotalInCurrency: Currency
       currentAmount: Amount }
 
-type Buy =
-    { buyAmount: Amount
+type BaseTransaction =
+    { stock: Stock
+      amount: Amount
       timestamp: DateTime
-      isin: Isin
-      price: Currency }
-
-type Sell =
-    { sellAmount: Amount
-      timestamp: DateTime
-      isin: Isin
       price: Currency }
 
 type Transaction =
-    | Buy of Buy
-    | Sell of Sell
+    | Buy of BaseTransaction
+    | Sell of BaseTransaction
 
 type Depot = { transactions: List<Transaction> }

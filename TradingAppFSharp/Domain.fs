@@ -4,23 +4,30 @@ open System
 open DomainTypes
 open DepotApiTypes
 open ExternalStockApi
-open DomainTypeMappings
 
 // GUI parameter
 let private columnInnerSize = 15
 let private numberOfPositionColumns = 6
 
-let private sumAmount(values: AgnosticTransaction list) : Amount =
-    { value = values |> List.sumBy(fun v -> v.amount.value) }
+let private sumAmount(values: Transaction list) : Amount =    
+    { value = values 
+        |> List.sumBy(fun v -> 
+            match v with 
+            | Buy v -> v.amount.value 
+            | Sell v -> -v.amount.value ) }
 
-let private sumCurrentValue(stock: Stock) (positions: AgnosticTransaction list) : Currency =
+let private sumCurrentValue(stock: Stock) (positions: Transaction list) : Currency =
     { value = (getCurrentPrice stock.isin).value *
                 decimal (sumAmount positions).value }
 
-let private sumTradingValue(positions: AgnosticTransaction list) : Currency =
-    { value = positions |> List.sumBy(fun p -> p.price.value * decimal p.amount.value) }
+let private sumTradingValue(positions: Transaction list) : Currency =
+    { value = positions 
+        |> List.sumBy(fun p -> 
+            match p with
+            | Buy p -> p.price.value * decimal p.amount.value
+            | Sell p -> p.price.value * decimal -p.amount.value ) }
 
-let private aggregateStockPositions(stock: Stock, transactions: AgnosticTransaction list) : Position =
+let private aggregateStockPositions(stock: Stock, transactions: Transaction list) : Position =
     let currentValue = sumCurrentValue stock transactions
     let tradingValue = sumTradingValue transactions
     { currentValue = currentValue
@@ -34,8 +41,10 @@ let private aggregateStockPositions(stock: Stock, transactions: AgnosticTransact
 
 let private getPositions (depot: Depot) : Position list =
     depot.transactions
-    |> List.map(toAgnosticTransaction)
-    |> List.groupBy(fun t -> t.stock)
+    |> List.groupBy(fun t -> 
+        match t with
+        |Buy t -> t.stock
+        |Sell t -> t.stock)
     |> List.map(aggregateStockPositions)
 
 let private getPrintableTableRow(columnValues: string list) =
@@ -74,9 +83,9 @@ let private getAvailableAmountFromDepot (depot: Depot) (isin: Isin) : Amount =
 
 let private buyOrder (depot: Depot) (buy: MessageTypes.Buy) : Depot =
     let newTransaction =
-        { buyAmount = buy.buyAmount
+        { stock = { isin = buy.isin; name = getName buy.isin }
+          amount = buy.buyAmount
           timestamp = DateTime.Now
-          isin = buy.isin
           price = getCurrentPriceWhenTrading buy.isin }
 
     { transactions = (Buy newTransaction) :: depot.transactions }
@@ -88,9 +97,9 @@ let private sellOrder (depot: Depot) (sell: MessageTypes.Sell) : Depot =
         depot
     | false ->
         let newTransaction =
-            { sellAmount = sell.sellAmount
+            { stock = { isin = sell.isin; name = getName sell.isin }
+              amount = sell.sellAmount
               timestamp = DateTime.Now
-              isin = sell.isin
               price = getCurrentPriceWhenTrading sell.isin }
 
         { transactions = (Sell newTransaction) :: depot.transactions }
