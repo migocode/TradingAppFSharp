@@ -14,6 +14,7 @@ let read (input: string) =
     | Sell v -> MessageTypes.Sell v |> DomainMessage
     | DepotPositions -> MessageTypes.DepotPositions |> DomainMessage
     | DepotValue -> MessageTypes.DepotValue |> DomainMessage
+    | StockList -> MessageTypes.StockList |> DomainMessage
     | Help -> HelpRequested
     | ParseFailed -> NotParsable input
 
@@ -25,7 +26,11 @@ let createHelpText () : string =
     |> Array.fold (fun prev curr -> prev + " " + curr) ""
     |> (fun s -> s.Trim() |> sprintf "Known commands are: %s")
 
-let evaluate (update: MessageTypes.Message -> DomainTypes.Depot -> DomainTypes.Depot) (depot: DomainTypes.Depot) (msg: Message) =
+let evaluate
+    (update: MessageTypes.Message -> DomainTypes.Depot -> DomainTypes.Depot)
+    (depot: DomainTypes.Depot)
+    (msg: Message)
+    =
     match msg with
     | DomainMessage msg ->
         let newState = update msg depot

@@ -11,3 +11,4 @@ let update (msg: MessageTypes.Message) (depot: Depot) : Depot =
     | MessageTypes.Message.Sell x -> depotApi.sellOrder depot x
     | MessageTypes.Message.DepotValue -> depotApi.calcDepotValue depot
     | MessageTypes.Message.DepotPositions -> depotApi.getPositions depot
+    | MessageTypes.Message.StockList -> depotApi.getStocks depot
