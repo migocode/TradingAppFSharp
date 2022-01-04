@@ -11,13 +11,12 @@
     <Compile Include="MessageTypes.fs" />
     <Compile Include="DepotApiTypes.fs" />
     <Compile Include="ExternalStockApi.fs" />
+    <Compile Include="Const.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="State.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Repl.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
 </Project>
