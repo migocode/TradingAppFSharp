@@ -10,24 +10,53 @@ let private placeholderSumPosition = { isin = { value = "Sum" }; name = "Sum"}
 let private safeDiv (a: decimal) (b: decimal) : decimal =
     if b.Equals Decimal.Zero then decimal 99999999 else a / b
 
+type StockList = { isin: string; price: int }
+
+let stockList =
+    [ { isin = "Apple"; price = 467 }
+      { isin = "Google"; price = 889 }
+      { isin = "Microsoft"; price = 654 }
+      { isin = "Facebook"; price = 234 }
+      { isin = "Netflix"; price = 222 }
+      { isin = "Amazon"; price = 993 }
+      { isin = "Oracle"; price = 104 }
+      { isin = "Intel"; price = 233 }
+      { isin = "Erste"; price = 55 }
+      { isin = "Voest"; price = 24 }
+      { isin = "OMV"; price = 44 } ]
+
+let existsInStockList (queryIsin: string) : bool =
+    let isinExists =
+        stockList
+        |> List.map (fun stock -> stock.isin)
+        |> List.exists (fun isin -> isin = queryIsin)
+
+    if isinExists = false then
+        printfn "<<<< The isin '%s' cannot be found in the stock list. >>>>" queryIsin
+
+    isinExists
+
 let private sumAmount (values: Transaction list) : Amount =
-    { value = values 
-        |> List.sumBy(fun v -> 
-            match v with 
-            | Buy v -> v.amount.value 
-            | Sell v -> -v.amount.value ) }
+    { value =
+        values
+        |> List.sumBy (fun v ->
+            match v with
+            | Buy v -> v.amount.value
+            | Sell v -> -v.amount.value) }
 
 let private sumCurrentValue (stock: Stock, positions: Transaction list) : Currency =
-    { value = (getCurrentPrice stock.isin).value *
-                decimal (sumAmount positions).value }
+    { value =
+        (getCurrentPrice stock.isin).value
+        * decimal (sumAmount positions).value }
 
 let private sumYesterdayValue (stock: Stock, positions: Transaction list) : Currency =
     { value = (getYesterdayPrice stock.isin).value *
                 decimal (sumAmount positions).value }
 
 let private sumTradingValue (positions: Transaction list) : Currency =
-    { value = positions 
-        |> List.sumBy(fun p -> 
+    { value =
+        positions
+        |> List.sumBy (fun p ->
             match p with
             | Buy p -> p.price.value * decimal p.amount.value
             | Sell p -> p.price.value * decimal -p.amount.value) }
@@ -61,8 +90,8 @@ let private aggregateStockPositions (stock: Stock, transactions: Transaction lis
 
 let private getTransactionStock (t: Transaction) : Stock =
     match t with
-    |Buy t -> t.stock
-    |Sell t -> t.stock
+    | Buy t -> t.stock
+    | Sell t -> t.stock
 
 let private getPositions (depot: Depot) : Position list =
     depot.transactions
@@ -86,9 +115,11 @@ let private getDepotSum (depot: Depot) : Position =
     calculatePosition placeholderSumPosition currentValue yesterdayValue tradingValue depot.transactions
 
 let private getPrintableTableRow (columnValues: string list) =
-    let row = columnValues
-                |> List.map(fun s -> $"| {s.PadRight Const.Gui.columnInnerSize} ")
-                |> List.reduce(fun a b -> a + b)
+    let row =
+        columnValues
+        |> List.map (fun s -> $"| {s.PadRight Const.Gui.columnInnerSize} ")
+        |> List.reduce (fun a b -> a + b)
+
     $"{row} |"
 
 let private positionHeaderColumns =
@@ -116,8 +147,13 @@ let private getColumnsForPositionRow (p: Position) : string list =
      $"%.2f{p.differenceYesterdayInPercent.value}"]
 
 let private getPositionFromDepot (depot: Depot) (isin: Isin) : Option<SimplePosition> =
-    match getPositions depot |> Seq.tryFind(fun p -> p.stock.isin = isin) with
-    | Some x -> Some { currentAmount = x.currentAmount; stock = x.stock}
+    match getPositions depot
+          |> Seq.tryFind (fun p -> p.stock.isin = isin)
+        with
+    | Some x ->
+        Some
+            { currentAmount = x.currentAmount
+              stock = x.stock }
     | None -> None
 
 let private getAvailableAmountFromDepot (depot: Depot) (isin: Isin) : Amount =
@@ -127,21 +163,32 @@ let private getAvailableAmountFromDepot (depot: Depot) (isin: Isin) : Amount =
 
 let private buyOrder (depot: Depot) (buy: MessageTypes.Buy) : Depot =
     let newTransaction =
-        { stock = { isin = buy.isin; name = getName buy.isin }
+        { stock =
+            { isin = buy.isin
+              name = getName buy.isin }
           amount = buy.buyAmount
           timestamp = DateTime.Now
           price = getCurrentPriceWhenTrading buy.isin }
 
-    { transactions = (Buy newTransaction) :: depot.transactions }
+
+    if existsInStockList buy.isin.value then
+        { transactions = (Buy newTransaction) :: depot.transactions }
+    else
+        depot
 
 let private sellOrder (depot: Depot) (sell: MessageTypes.Sell) : Depot =
-    match getAvailableAmountFromDepot depot sell.isin < sell.sellAmount with
+    match
+        getAvailableAmountFromDepot depot sell.isin < sell.sellAmount
+        && not (existsInStockList sell.isin.value)
+        with
     | true ->
         printfn "Sell order cannot be executed due to insufficient stock amount in the depot."
         depot
     | false ->
         let newTransaction =
-            { stock = { isin = sell.isin; name = getName sell.isin }
+            { stock =
+                { isin = sell.isin
+                  name = getName sell.isin }
               amount = sell.sellAmount
               timestamp = DateTime.Now
               price = getCurrentPriceWhenTrading sell.isin }
@@ -151,7 +198,7 @@ let private sellOrder (depot: Depot) (sell: MessageTypes.Sell) : Depot =
 let private calcDepotValue (depot: Depot) : Depot =
     let depotValue =
         getPositions depot
-        |> List.sumBy(fun t -> t.currentValue.value)
+        |> List.sumBy (fun t -> t.currentValue.value)
 
     printfn "Depot Value : %.2f" depotValue
     depot
@@ -160,26 +207,37 @@ let private printLine () =
     printfn "%s" (String.replicate ((Const.Gui.columnInnerSize + 3) * positionHeaderColumns.Length + 2) "-")
 
 let private printHeader () =
-    printfn $"{getPositionHeader()}"
-    printLine()
+    printfn $"{getPositionHeader ()}"
+    printLine ()
 
 let private printDepotSum (depot: Depot) =
-    printLine()
-    printfn $"{getDepotSum depot |> getColumnsForPositionRow |> getPrintableTableRow}"
+    printLine ()
+
+    printfn
+        $"{getDepotSum depot
+           |> getColumnsForPositionRow
+           |> getPrintableTableRow}"
 
 let private printPositions (depot: Depot) =
     getPositions depot
-    |> List.map(fun p -> getColumnsForPositionRow p |> getPrintableTableRow)
+    |> List.map (fun p -> getColumnsForPositionRow p |> getPrintableTableRow)
     |> List.iter (fun p -> printfn $"{p}")
 
 let private printDepot (depot: Depot) : Depot =
-    printHeader()
+    printHeader ()
     printPositions depot
     printDepotSum depot
+    depot
+
+let private printStocks (depot: Depot) : Depot =
+    stockList
+    |> List.iter (fun item -> printfn "isin: %A  price: %A" item.isin item.price)
+
     depot
 
 let depotApi: DepotApi =
     { buyOrder = buyOrder
       sellOrder = sellOrder
       calcDepotValue = calcDepotValue
-      getPositions = printDepot }
+      getPositions = printDepot
+      getStocks = printStocks }

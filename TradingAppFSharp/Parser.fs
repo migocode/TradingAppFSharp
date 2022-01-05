@@ -9,7 +9,7 @@ let safeEquals (it: string) (theOther: string) =
 [<Literal>]
 let HelpLabel = "Help"
 
-let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|) (input: string) =
+let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|StockList|) (input: string) =
     let tryParseInt (arg: string) valueConstructor =
         let (worked, arg') = Int32.TryParse arg
 
@@ -35,5 +35,6 @@ let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|) (input: string) =
                   isin = { value = isin } })
     | [ verb ] when safeEquals verb (nameof DepotValue) -> DepotValue
     | [ verb ] when safeEquals verb (nameof DepotPositions) -> DepotPositions
+    | [ verb ] when safeEquals verb (nameof StockList) -> StockList
     | [ verb ] when safeEquals verb HelpLabel -> Help
     | _ -> ParseFailed
