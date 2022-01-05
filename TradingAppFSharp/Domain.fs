@@ -5,6 +5,11 @@ open DomainTypes
 open DepotApiTypes
 open ExternalStockApi
 
+let private placeholderSumPosition = { isin = { value = "Sum" }; name = "Sum"}
+
+let private safeDiv (a: decimal) (b: decimal) : decimal =
+    if b.Equals Decimal.Zero then decimal 99999999 else a / b
+
 let private sumAmount (values: Transaction list) : Amount =
     { value = values 
         |> List.sumBy(fun v -> 
@@ -16,33 +21,45 @@ let private sumCurrentValue (stock: Stock, positions: Transaction list) : Curren
     { value = (getCurrentPrice stock.isin).value *
                 decimal (sumAmount positions).value }
 
+let private sumYesterdayValue (stock: Stock, positions: Transaction list) : Currency =
+    { value = (getYesterdayPrice stock.isin).value *
+                decimal (sumAmount positions).value }
+
 let private sumTradingValue (positions: Transaction list) : Currency =
     { value = positions 
         |> List.sumBy(fun p -> 
             match p with
             | Buy p -> p.price.value * decimal p.amount.value
-            | Sell p -> p.price.value * decimal -p.amount.value ) }
+            | Sell p -> p.price.value * decimal -p.amount.value) }
 
 let private calculatePosition (stock: Stock)
                               (currentValue: Currency)
+                              (yesterdayValue: Currency)
                               (tradingValue: Currency)
-                              (transactions: Transaction list) 
+                              (transactions: Transaction list)
                               : Position =
+
     { currentValue = currentValue
       stock = stock
       differenceTotalInPercentage = 
         { value = decimal (currentValue.value - tradingValue.value) *
-                  decimal 100 / tradingValue.value }
+                  safeDiv (decimal 100) tradingValue.value }
       differenceTotalInCurrency =
         { value = currentValue.value - tradingValue.value }
-      currentAmount = sumAmount transactions }
+      currentAmount = sumAmount transactions
+      differenceYesterdayInCurrency = 
+        { value = currentValue.value - yesterdayValue.value }
+      differenceYesterdayInPercent =
+        { value = decimal (currentValue.value - yesterdayValue.value) *
+                  safeDiv (decimal 100) yesterdayValue.value } }
 
 let private aggregateStockPositions (stock: Stock, transactions: Transaction list) : Position =
     let currentValue = sumCurrentValue (stock, transactions)
+    let yesterdayValue = sumYesterdayValue (stock, transactions)
     let tradingValue = sumTradingValue transactions
-    calculatePosition stock currentValue tradingValue transactions
+    calculatePosition stock currentValue yesterdayValue tradingValue transactions
 
-let private getTransactionStock (t : Transaction) : Stock =
+let private getTransactionStock (t: Transaction) : Stock =
     match t with
     |Buy t -> t.stock
     |Sell t -> t.stock
@@ -52,16 +69,21 @@ let private getPositions (depot: Depot) : Position list =
     |> List.groupBy getTransactionStock
     |> List.map aggregateStockPositions
 
-let private fakeSumPosition = { isin = { value = "Sum" }; name = "Sum"}
+let private calculateValue (calculationFun: Stock * Transaction list -> Currency)
+                           (transactionsForStocks: (Stock * Transaction list) list)
+                           : Currency =
+
+    { Currency.value =
+        transactionsForStocks
+        |> List.map(calculationFun)
+        |> List.sumBy(fun t -> t.value) }
 
 let private getDepotSum (depot: Depot) : Position =
     let transactionsForStocks = depot.transactions |> List.groupBy(getTransactionStock)
-    let currentValue = { Currency.value =
-                            transactionsForStocks
-                            |> List.map(sumCurrentValue)
-                            |> List.sumBy(fun t -> t.value) }
+    let currentValue = calculateValue sumCurrentValue transactionsForStocks
+    let yesterdayValue = calculateValue sumYesterdayValue transactionsForStocks
     let tradingValue = sumTradingValue depot.transactions
-    calculatePosition fakeSumPosition currentValue tradingValue depot.transactions
+    calculatePosition placeholderSumPosition currentValue yesterdayValue tradingValue depot.transactions
 
 let private getPrintableTableRow (columnValues: string list) =
     let row = columnValues
@@ -75,7 +97,9 @@ let private positionHeaderColumns =
     "Amount";
     "Current Value";
     "Performance";
-    "Performance [%]"]
+    "Performance [%]";
+    "Performance (y.)";
+    "Performance [%] (y.)"]
 
 let private getPositionHeader () : string =
     getPrintableTableRow positionHeaderColumns
@@ -87,7 +111,9 @@ let private getColumnsForPositionRow (p: Position) : string list =
      string p.currentAmount.value;
      $"%.2f{p.currentValue.value}";
      $"%.2f{p.differenceTotalInCurrency.value}";
-     $"%.2f{p.differenceTotalInPercentage.value}"]
+     $"%.2f{p.differenceTotalInPercentage.value}";
+     $"%.2f{p.differenceYesterdayInCurrency.value}";
+     $"%.2f{p.differenceYesterdayInPercent.value}"]
 
 let private getPositionFromDepot (depot: Depot) (isin: Isin) : Option<SimplePosition> =
     match getPositions depot |> Seq.tryFind(fun p -> p.stock.isin = isin) with
@@ -131,7 +157,7 @@ let private calcDepotValue (depot: Depot) : Depot =
     depot
 
 let private printLine () =
-    printfn "%s" (String.replicate ((Const.Gui.columnInnerSize + 3) * positionHeaderColumns.Length + 1) "-")
+    printfn "%s" (String.replicate ((Const.Gui.columnInnerSize + 3) * positionHeaderColumns.Length + 2) "-")
 
 let private printHeader () =
     printfn $"{getPositionHeader()}"
