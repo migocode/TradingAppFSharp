@@ -2,5 +2,5 @@
 
 module Gui =
 
-    let columnInnerSize = 15
+    let columnInnerSize = 20
     let sumRowName = "Sum"

@@ -16,8 +16,8 @@ type SimplePosition =
 type Position =
     { currentValue: Currency
       stock: Stock
-      //differenceYesterdayInPercent: Percentage
-      //differenceYesterdayInCurrency: Currency
+      differenceYesterdayInPercent: Percentage
+      differenceYesterdayInCurrency: Currency
       differenceTotalInPercentage: Percentage
       differenceTotalInCurrency: Currency
       currentAmount: Amount }
