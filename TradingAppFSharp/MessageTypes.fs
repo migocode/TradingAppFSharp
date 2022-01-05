@@ -18,3 +18,4 @@ type Message =
     | Sell of Sell
     | DepotValue
     | DepotPositions
+    | StockList
