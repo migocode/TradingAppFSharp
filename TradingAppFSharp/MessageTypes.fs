@@ -13,9 +13,14 @@ type Sell =
       messageTimestamp: DateTime
       isin: Isin }
 
+type PersistenceAction =
+    | Load of string
+    | Save of string
+
 type Message =
     | Buy of Buy
     | Sell of Sell
     | DepotValue
     | DepotPositions
     | StockList
+    | PersistenceAction of PersistenceAction
