@@ -4,6 +4,7 @@ open System
 open DomainTypes
 open DepotApiTypes
 open ExternalStockApi
+open Persistance
 
 let private placeholderSumPosition = { isin = { value = "Sum" }; name = "Sum"}
 
@@ -232,7 +233,6 @@ let private printDepot (depot: Depot) : Depot =
 let private printStocks (depot: Depot) : Depot =
     stockList
     |> List.iter (fun item -> printfn "isin: %A  price: %A" item.isin item.price)
-
     depot
 
 let depotApi: DepotApi =
@@ -240,4 +240,5 @@ let depotApi: DepotApi =
       sellOrder = sellOrder
       calcDepotValue = calcDepotValue
       getPositions = printDepot
-      getStocks = printStocks }
+      getStocks = printStocks 
+      managePersistence = managePersistence}

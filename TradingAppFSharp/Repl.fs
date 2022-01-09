@@ -15,7 +15,7 @@ let read (input: string) =
     | DepotPositions -> MessageTypes.DepotPositions |> DomainMessage
     | DepotValue -> MessageTypes.DepotValue |> DomainMessage
     | StockList -> MessageTypes.StockList |> DomainMessage
-    | Help -> HelpRequested
+    | PersistenceAction v -> MessageTypes.PersistenceAction v |> DomainMessage
     | ParseFailed -> NotParsable input
 
 open Microsoft.FSharp.Reflection
@@ -29,8 +29,7 @@ let createHelpText () : string =
 let evaluate
     (update: MessageTypes.Message -> DomainTypes.Depot -> DomainTypes.Depot)
     (depot: DomainTypes.Depot)
-    (msg: Message)
-    =
+    (msg: Message) =
     match msg with
     | DomainMessage msg ->
         let newState = update msg depot
@@ -44,10 +43,7 @@ let evaluate
         (depot, message)
     | NotParsable originalInput ->
         let message =
-            sprintf
-                """"%s" was not parsable. %s"""
-                originalInput
-                "You can get information about known commands by typing \"Help\""
+            sprintf """"%s" was not parsable.""" originalInput
 
         (depot, message)
 

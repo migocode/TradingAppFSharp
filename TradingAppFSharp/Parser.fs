@@ -9,7 +9,15 @@ let safeEquals (it: string) (theOther: string) =
 [<Literal>]
 let HelpLabel = "Help"
 
-let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|StockList|) (input: string) =
+let (|Buy|Sell|PersistenceAction|ParseFailed|DepotPositions|DepotValue|StockList|) (input: string) =  
+    let (|Load|Save|ParseFailed|) (input: string) =
+        match input with
+        | action when safeEquals action (nameof Load) ->
+            Load
+        | action when safeEquals action (nameof Save) ->
+            Save
+        | _ -> ParseFailed
+    
     let tryParseInt (arg: string) valueConstructor =
         let (worked, arg') = Int32.TryParse arg
 
@@ -36,5 +44,9 @@ let (|Buy|Sell|Help|ParseFailed|DepotPositions|DepotValue|StockList|) (input: st
     | [ verb ] when safeEquals verb (nameof DepotValue) -> DepotValue
     | [ verb ] when safeEquals verb (nameof DepotPositions) -> DepotPositions
     | [ verb ] when safeEquals verb (nameof StockList) -> StockList
-    | [ verb ] when safeEquals verb HelpLabel -> Help
+    | [ verb; action; fileName ] when safeEquals verb (nameof PersistenceAction) -> 
+        match action with
+        | Load -> PersistenceAction (PersistenceAction.Load fileName)
+        | Save -> PersistenceAction (PersistenceAction.Save fileName)
+        | _ -> ParseFailed
     | _ -> ParseFailed
