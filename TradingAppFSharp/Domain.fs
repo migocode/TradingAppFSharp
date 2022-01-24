@@ -11,29 +11,14 @@ let private placeholderSumPosition = { isin = { value = "Sum" }; name = "Sum"}
 let private safeDiv (a: decimal) (b: decimal) : decimal =
     if b.Equals Decimal.Zero then decimal 99999999 else a / b
 
-type StockList = { isin: string; price: int }
-
-let stockList =
-    [ { isin = "Apple"; price = 467 }
-      { isin = "Google"; price = 889 }
-      { isin = "Microsoft"; price = 654 }
-      { isin = "Facebook"; price = 234 }
-      { isin = "Netflix"; price = 222 }
-      { isin = "Amazon"; price = 993 }
-      { isin = "Oracle"; price = 104 }
-      { isin = "Intel"; price = 233 }
-      { isin = "Erste"; price = 55 }
-      { isin = "Voest"; price = 24 }
-      { isin = "OMV"; price = 44 } ]
-
-let existsInStockList (queryIsin: string) : bool =
+let existsInStockList (stockName: string) : bool =
     let isinExists =
         stockList
-        |> List.map (fun stock -> stock.isin)
-        |> List.exists (fun isin -> isin = queryIsin)
+        |> List.map (fun stock -> stock.name)
+        |> List.exists (fun name -> name = stockName)
 
     if isinExists = false then
-        printfn "<<<< The isin '%s' cannot be found in the stock list. >>>>" queryIsin
+        printfn "<<<< The isin '%s' cannot be found in the stock list. >>>>" stockName
 
     isinExists
 
@@ -180,7 +165,7 @@ let private buyOrder (depot: Depot) (buy: MessageTypes.Buy) : Depot =
 let private sellOrder (depot: Depot) (sell: MessageTypes.Sell) : Depot =
     match
         getAvailableAmountFromDepot depot sell.isin < sell.sellAmount
-        && not (existsInStockList sell.isin.value)
+        || not (existsInStockList sell.isin.value)
         with
     | true ->
         printfn "Sell order cannot be executed due to insufficient stock amount in the depot."
@@ -232,7 +217,7 @@ let private printDepot (depot: Depot) : Depot =
 
 let private printStocks (depot: Depot) : Depot =
     stockList
-    |> List.iter (fun item -> printfn "isin: %A  price: %A" item.isin item.price)
+    |> List.iter (fun item -> printfn "isin: %s  price: %.2f" item.isin.value (getCurrentPrice item.isin).value)
     depot
 
 let depotApi: DepotApi =
